@@ -508,6 +508,14 @@ function personaje(o) {
         w: 22, h: 48
     };
 }
+function albertoTeclea(i) {
+    const p = new Pix(46, 46), ox = 8;
+    p.put(ox - 5, 29, CHAIR_SIDE.slice(16, 20));
+    p.put(ox + 1, 15, sub(A_BODY_SIDE, { q: 'α', Q: 'β', I: 'γ' }));
+    p.put(ox + 2, 1, sub(A_HEAD_SIDE, { h: 'δ', H: 'ε' }));
+    p.put(ox + 4, 16, sub(A_ARM_TYPE[i], { q: 'α', Q: 'β', I: 'γ' }));
+    return spriteCanvas(p.outline('k'), CM, false);
+}
 function albertoSentado(dormido) {
     const p = new Pix(46, 46), ox = 8;
     const head = sub(A_HEAD_SIDE, { h: 'δ', H: 'ε' }).map((r, j) => dormido && j === 6 ? r.slice(0, 12) + 'a' + r.slice(13) : r);
@@ -822,6 +830,7 @@ function filasOpciones() {
 function pulsar(x, y) {
     if (resolverToque) { if (performance.now() < toqueDesde) return; sonido('click'); resolverToque(); return; }
     sonido('click');
+    if (G.cierre) { tocarCierre(x, y); return; }
     if (G.clase) { tocarClase(x, y); return; }
     if (G.cuaderno !== null) { tocarCuaderno(x, y); return; }
     if (G.vineta) { const v = G.vineta; v.i++; if (v.i >= v.paginas.length) { G.vineta = null; v.r(); } return; }
@@ -909,6 +918,7 @@ function partir(str, max, t = 9) {
 
 function dibujar() {
     const P = PANTALLAS[G.pantalla];
+    if (G.cierre) { dibujarCierre(); return; }
     if (G.clase) { TG.clearRect(0, 0, TX.width, TX.height); CX.imageSmoothingEnabled = false; dibujarClase(); if (G.fundido > 0) { CX.fillStyle = `rgba(5,4,10,${Math.min(1, Math.round(G.fundido * 4) / 4)})`; CX.fillRect(0, 0, W, H); } return; }
     CX.imageSmoothingEnabled = false;
     CX.fillStyle = '#000'; CX.fillRect(0, 0, W, H);
@@ -2132,6 +2142,150 @@ function dibujarClase() {
     if (c.p === n && ay) textoGrande('Sigue: queda la página «Para la aventura»', W / 2, H - 52, TIZAY, { al: 'center', t: 7.5, borde: false });
 }
 
+const ESC = { x: 17, y: 15, w: 74.5, h: 90 };
+const ESC_C = [ESC.x + ESC.w / 2, ESC.y + ESC.h / 2];
+const CODIGO = [
+    [['k', 'const '], ['v', 'despacho'], ['t', ' = {']],
+    [['t', '  reloj: '], ['s', '"00:15"'], ['t', ',']],
+    [['t', '  alberto: { '], ['v', 'pose'], ['t', ': '], ['s', '"teclear"'], ['t', ' },']],
+    [['t', '  luz: '], ['k', 'false'], ['t', ',']],
+    [['t', '};']],
+    [],
+    [['k', 'function '], ['f', 'sueña'], ['t', '(alberto) {']],
+    [['t', '  alberto.'], ['f', 'duerme'], ['t', '();']],
+    [['t', '  '], ['k', 'return '], ['f', 'fundido'], ['t', '("átomo");']],
+    [['t', '}']],
+    [],
+    [['c', '// ¿quién escribe esto?']]
+];
+const COL_COD = { k: '#ff7b9c', v: '#8ec5ff', s: '#a8e6a0', f: '#f2c98a', t: '#c9d1e0', c: '#6b7a99' };
+function rr(T, x, y, w, h, r) { T.beginPath(); T.moveTo(x + r, y); T.arcTo(x + w, y, x + w, y + h, r); T.arcTo(x + w, y + h, x, y + h, r); T.arcTo(x, y + h, x, y, r); T.arcTo(x, y, x + w, y, r); T.closePath(); }
+function degradado(T, x0, y0, x1, y1, paradas) { const g = T.createLinearGradient(x0, y0, x1, y1); paradas.forEach(([o, c]) => g.addColorStop(o, c)); return g; }
+function manoReal(T, hx, t, fase, lado) {
+    const piel = degradado(T, hx - 14, 170, hx + 14, 220, [[0, '#ebc196'], [0.55, '#d6a176'], [1, '#b98059']]);
+    T.fillStyle = 'rgba(0,0,0,0.38)'; T.beginPath(); T.ellipse(hx + 2, 208, 18, 22, 0, 0, 6.283); T.fill();
+    T.fillStyle = piel;
+    T.beginPath(); T.moveTo(hx - 12, 250); T.lineTo(hx - 10, 205); T.lineTo(hx + 10, 205); T.lineTo(hx + 12, 250); T.closePath(); T.fill();
+    T.beginPath(); T.moveTo(hx - 11, 209); T.bezierCurveTo(hx - 16, 199, hx - 15, 187, hx - 12, 181); T.lineTo(hx + 12, 181); T.bezierCurveTo(hx + 15, 187, hx + 16, 199, hx + 11, 209); T.closePath(); T.fill();
+    T.save(); T.translate(hx - lado * 13.5, 197); T.rotate(-lado * 0.75);
+    T.fillStyle = degradado(T, -4, 0, 4, 0, [[0, '#e9bf96'], [1, '#c58c62']]); rr(T, -2.8, -9, 5.6, 14, 2.8); T.fill();
+    T.fillStyle = 'rgba(255,235,215,0.55)'; T.beginPath(); T.ellipse(0, -7, 1.7, 1.3, 0, 0, 6.283); T.fill();
+    T.restore();
+    const largos = [17, 22, 21, 16];
+    for (let i = 0; i < 4; i++) {
+        const fx = hx - 10.4 + i * 6.9, p = Math.max(0, Math.sin(t * 10 + fase + i * 1.9)), dy = p * 2.4, top = 184 - largos[i] + dy;
+        T.fillStyle = degradado(T, fx, 0, fx + 5.6, 0, [[0, '#ecc39a'], [0.6, '#d3996d'], [1, '#b98059']]);
+        rr(T, fx, top, 5.6, 186 - top, 2.8); T.fill();
+        T.fillStyle = 'rgba(255,236,218,0.6)'; T.beginPath(); T.ellipse(fx + 2.8, top + 2.6, 1.9, 2.1, 0, 0, 6.283); T.fill();
+        T.strokeStyle = 'rgba(120,70,40,0.35)'; T.lineWidth = 0.5; T.beginPath(); T.moveTo(fx + 0.8, 185); T.quadraticCurveTo(fx + 2.8, 183.4, fx + 4.8, 185); T.stroke();
+    }
+    T.strokeStyle = 'rgba(255,230,205,0.25)'; T.lineWidth = 0.8; T.beginPath(); T.moveTo(hx - 8, 248); T.lineTo(hx - 7, 210); T.stroke();
+}
+function escenaReal(e) {
+    const T = TG, k0 = SH / ESC.h, k = Math.pow(k0, 1 - e), t = G.t;
+    const cx = 96 + (ESC_C[0] - 96) * e, cy = SH / 2 + (ESC_C[1] - SH / 2) * e;
+    T.save();
+    T.setTransform(K, 0, 0, K, 0, 0); T.beginPath(); T.rect(0, 0, W, SH); T.clip();
+    T.setTransform(K * k, 0, 0, K * k, K * (cx - k * ESC_C[0]), K * (cy - k * ESC_C[1]));
+    T.fillStyle = degradado(T, 0, -60, 0, 120, [[0, '#1f1c2a'], [1, '#0e0c14']]); T.fillRect(-400, -400, 1000, 560);
+    const resp = T.createRadialGradient(96, 60, 10, 96, 60, 150); resp.addColorStop(0, 'rgba(110,150,255,0.14)'); resp.addColorStop(1, 'rgba(110,150,255,0)');
+    T.fillStyle = resp; T.fillRect(-400, -400, 1000, 700);
+    T.fillStyle = degradado(T, 0, 118, 0, 260, [[0, '#4a3626'], [0.15, '#35261b'], [1, '#150f0a']]); T.fillRect(-400, 118, 1000, 500);
+    T.fillStyle = 'rgba(255,220,180,0.22)'; T.fillRect(-400, 118, 1000, 0.8);
+    T.fillStyle = 'rgba(0,0,0,0.35)'; T.beginPath(); T.ellipse(96, 123, 46, 5, 0, 0, 6.283); T.fill();
+    T.fillStyle = degradado(T, 0, 108, 0, 124, [[0, '#24242c'], [1, '#101015']]); T.fillRect(89, 106, 14, 17);
+    T.fillStyle = '#17171c'; T.beginPath(); T.ellipse(96, 122, 26, 3.4, 0, 0, 6.283); T.fill();
+    T.fillStyle = '#0b0b0f'; rr(T, 12, 9, 168, 100, 5); T.fill();
+    T.strokeStyle = '#2d2d38'; T.lineWidth = 0.7; rr(T, 12.4, 9.4, 167.2, 99.2, 5); T.stroke();
+    T.fillStyle = '#0d1117'; T.fillRect(ESC.x, ESC.y, 158, ESC.h);
+    T.imageSmoothingEnabled = false;
+    T.drawImage(CV, 0, 0, W, SH, ESC.x, ESC.y, ESC.w, ESC.h);
+    const px0 = ESC.x + ESC.w + 1.5, pw = 158 - ESC.w - 1.5;
+    T.fillStyle = '#10151f'; T.fillRect(px0, ESC.y, pw, ESC.h);
+    T.fillStyle = '#18202e'; T.fillRect(px0, ESC.y, pw, 7);
+    T.fillStyle = '#0d1117'; T.fillRect(px0 + 2, ESC.y + 1.5, 32, 5.5);
+    T.font = '500 36px "Courier New", Courier, monospace'; T.textBaseline = 'top';
+    const texto = (str, x, y) => { T.save(); T.scale(0.1, 0.1); for (let i = 0; i < str.length; i++) if (str[i] !== ' ') T.fillText(str[i], (x + i * 2.2) * 10, y * 10); T.restore(); };
+    const medida = str => str.length * 2.2;
+    T.fillStyle = '#8ec5ff'; texto('despacho.js', px0 + 4, ESC.y + 2.6);
+    const total = CODIGO.length, vistas = Math.min(total, Math.floor((t * 1.6) % (total + 6)) + 1);
+    CODIGO.forEach((ln, i) => {
+        if (i >= vistas) return;
+        let x = px0 + 3;
+        const y = ESC.y + 10 + i * 6.2;
+        T.fillStyle = '#3b4560'; texto(String(i + 1).padStart(2, '0'), x, y);
+        x += 6;
+        ln.forEach(([c, s]) => { T.fillStyle = COL_COD[c]; texto(s, x, y); x += medida(s); });
+        if (i === vistas - 1 && Math.floor(t * 2.5) % 2 === 0) { T.fillStyle = '#f2c98a'; T.fillRect(x + 0.4, y, 1.6, 4); }
+    });
+    const brillo = degradado(T, ESC.x, ESC.y, ESC.x + 90, ESC.y + 90, [[0, 'rgba(255,255,255,0.07)'], [0.4, 'rgba(255,255,255,0)'], [1, 'rgba(255,255,255,0)']]);
+    T.fillStyle = brillo; T.fillRect(ESC.x, ESC.y, 158, ESC.h);
+    T.fillStyle = Math.floor(t * 0.7) % 2 ? '#4aff8a' : '#2fb860'; T.fillRect(95, 105.4, 2, 1);
+    T.fillStyle = degradado(T, 0, 140, 0, 180, [[0, '#2f2f38'], [1, '#18181d']]);
+    T.beginPath(); T.moveTo(26, 180); T.lineTo(166, 180); T.lineTo(154, 138); T.lineTo(38, 138); T.closePath(); T.fill();
+    T.strokeStyle = 'rgba(255,255,255,0.08)'; T.lineWidth = 0.5; T.stroke();
+    const lit = Math.floor(t * 9);
+    for (let r = 0; r < 4; r++) {
+        const f0 = (r + 0.15) / 4.2, f1 = (r + 0.9) / 4.2, y0 = 139.5 + f0 * 40, y1 = 139.5 + f1 * 40, xl0 = 39 - f0 * 12, xr0 = 153 + f0 * 12, xl1 = 39 - f1 * 12, xr1 = 153 + f1 * 12, n = 13;
+        for (let c = 0; c < n; c++) {
+            const a = c / n, b = (c + 0.86) / n;
+            const x00 = xl0 + (xr0 - xl0) * a, x01 = xl0 + (xr0 - xl0) * b, x10 = xl1 + (xr1 - xl1) * a, x11 = xl1 + (xr1 - xl1) * b;
+            T.fillStyle = hr(r, c, lit) < 0.1 ? '#7d8396' : '#43434e';
+            T.beginPath(); T.moveTo(x00, y0); T.lineTo(x01, y0); T.lineTo(x11, y1); T.lineTo(x10, y1); T.closePath(); T.fill();
+        }
+    }
+    manoReal(T, 70, t, 0, 1);
+    manoReal(T, 124, t, 1.3, -1);
+    const luz = T.createRadialGradient(96, 60, 20, 96, 140, 170); luz.addColorStop(0, 'rgba(120,160,255,0.10)'); luz.addColorStop(1, 'rgba(0,0,0,0.5)');
+    T.fillStyle = luz; T.fillRect(-400, -400, 1000, 1000);
+    T.restore();
+}
+const BOT_CIERRE = { instituto: [8, SH + 62, 84, 30], inicio: [100, SH + 62, 84, 30] };
+function dibujarCierre() {
+    const c = G.cierre, P = PANTALLAS.despacho;
+    CX.imageSmoothingEnabled = false;
+    CX.fillStyle = '#000'; CX.fillRect(0, 0, W, H);
+    CX.drawImage(FONDOS.despacho, 0, 0);
+    const capas = [];
+    capas.push(...P.dibujar() || []);
+    capas.sort((a, b) => a.y - b.y).forEach(l => l.f());
+    CX.fillStyle = '#05040a'; CX.fillRect(0, SH, W, H - SH);
+    TG.clearRect(0, 0, TX.width, TX.height);
+    const u = Math.max(0, Math.min(1, (G.t - c.t0) / 3.6)), e = u * u * (3 - 2 * u);
+    escenaReal(e);
+    if (c.panel) {
+        CX.fillStyle = '#2e2640'; CX.fillRect(0, SH, W, 2);
+        partir('Cuando termine la siguiente parte, os aviso.', W - 24, 11).forEach((l, i) => textoGrande(l, W / 2, SH + 10 + i * 15, '#f6efe0', { al: 'center', t: 11, borde: false }));
+        for (const [r, txt] of [[BOT_CIERRE.instituto, 'Ir al instituto'], [BOT_CIERRE.inicio, 'Al inicio']]) { caja(r, '#2e2640', '#05040a', '#4a3f66'); textoGrande(txt, r[0] + r[2] / 2, r[1] + 9, '#f4e7a0', { al: 'center', t: 10, negrita: true, borde: false }); }
+    }
+}
+async function cierre() {
+    G.ocupado = true; G.postura = 'oculto'; G.dice = null; G.glitch = null;
+    G.cierre = { t0: G.t + 0.8, panel: false };
+    await esperar(5200);
+    G.cierre.panel = true;
+    G.ocupado = false;
+}
+async function tocarCierre(x, y) {
+    if (!G.cierre.panel) return;
+    if (dentro(x, y, BOT_CIERRE.instituto)) { G.cierre = null; await irAlInstituto(); }
+    else if (dentro(x, y, BOT_CIERRE.inicio)) { G.cierre = null; G.ocupado = true; await fundido(async () => { G.desdeTitulo = false; G.pantalla = null; TITULO = true; guardada = cargar(); }); G.ocupado = false; }
+}
+function dibujarGlitch() {
+    const g = G.glitch;
+    if (!g) return;
+    if (G.t < g.hasta) {
+        for (let i = 0; i < 16; i++) { const y = Math.floor(hr(i, Math.floor(G.t * 20), 11) * SH), h = 2 + Math.floor(hr(i, 5, Math.floor(G.t * 20)) * 4), dx = Math.floor((hr(i, 9, Math.floor(G.t * 20)) - 0.5) * 16); CX.drawImage(CV, 0, y, W, h, dx, y, W, h); }
+        for (let i = 0; i < 7; i++) { CX.fillStyle = ['#ff4060', '#40ffd0', '#ffffff', '#4060ff'][i % 4]; CX.fillRect(Math.floor(hr(i, Math.floor(G.t * 14), 2) * W), Math.floor(hr(i, Math.floor(G.t * 14), 3) * SH), 6 + Math.floor(hr(i, 1, 4) * 20), 1 + (i & 1)); }
+    }
+    if (g.popup) {
+        caja([14, 50, 164, 96], '#0b0814', '#ff6a6a');
+        textoGrande('ERROR · alberto.js', 22, 56, '#ff8f7a', { t: 9, negrita: true, borde: false });
+        ['butaca.js ........ ok', 'reloj.js ......... 00:15', 'ventana.js ....... ok', 'libro.js ......... ok'].forEach((l, i) => textoGrande(l, 22, 74 + i * 11, '#cfd6f0', { t: 8.5, borde: false }));
+        textoGrande('sueño.js ........ sin autor', 22, 120, '#ff8f7a', { t: 8.5, negrita: true, borde: false });
+    }
+}
+
 const NOTAS = {
     cosmos: { t: 'Empieza el viaje', x: ['Me he quedado dormido leyendo «Cosmos». En sueños, Carl Sagan me ha invitado a recorrer el universo, de lo más pequeño a lo más grande.'], c: 'El Cosmos es todo lo que es, todo lo que fue y todo lo que será', a: 'Carl Sagan, «Cosmos»' },
     potencias: { t: 'Potencias de diez', x: ['Cada paso de la lupa divide el tamaño entre diez: hoja, nervios, células, cloroplastos, moléculas… y átomo.', 'De una hoja de 10 centímetros a un átomo de 0,1 nanómetros hay diez pasos. El átomo es unas mil millones de veces más pequeño.'] },
@@ -2205,13 +2359,16 @@ Object.assign(PANTALLAS, {
     despacho: {
         suelo: [24, 150, 150], inicio: [120, -1],
         cabezaSentado: [80, 92],
+        get postura() { return G.flags.final ? 'oculto' : G.entraDormido ? 'dormido' : undefined; },
         entrar: async () => {
+            if (G.flags.final) { await cierre(); return; }
             if (G.flags.inicio) return;
             G.flags.inicio = true;
             await di('alberto', ['Qué tarde es.', 'Antes de dormir, un rato de lectura. ¿Dónde habré dejado «Cosmos»?']);
         },
         dibujar() {
             const l = [capaAlbertoSentado()];
+            if (G.cierre) l.push({ y: 150, f: () => CX.drawImage(SPR.albTeclea[Math.floor(G.t * 7) % 2], 140, 68) });
             l.push({ y: 0, f: () => {
                 if (!tiene('cosmos') && !G.flags.leido) { CX.fillStyle = '#16233f'; CX.fillRect(30, 76, 3, 11); CX.fillStyle = '#d9b453'; CX.fillRect(30, 80, 3, 1); }
                 CX.drawImage(G.flags.lampara === false ? SPR.lamparaOff : SPR.lampara, 98, 98);
@@ -2221,6 +2378,7 @@ Object.assign(PANTALLAS, {
         },
         encima() {
             if (G.postura === 'dormido') { const t = Math.floor(G.t * 2) % 3; textoGrande('z', 92 + t * 3, 92 - t * 6, '#cfe0ff', { t: 8 + t }); }
+            dibujarGlitch();
         },
         puntos: [
             { nombre: 'reloj', r: [56, 32, 16, 16], mira: 'Las doce y cuarto. Tarde, como siempre.' },
@@ -2422,6 +2580,7 @@ Object.assign(PANTALLAS, {
             return l;
         },
         entrar: async () => {
+            if (G.flags.fin1 && !G.flags.final) { await fin(); return; }
             if (G.flags.ruth) return;
             G.flags.ruth = true;
             await di('sagan', 'Mánchester, 1909. En el laboratorio de Ernest Rutherford trabajan a oscuras, contando destellos.');
@@ -2611,7 +2770,27 @@ async function hablarRutherford() {
 }
 async function fin() {
     G.flags.fin1 = true; guardar();
-    await tarjeta(['Fin de la primera parte', 'Próximamente: dentro del núcleo', '', 'Repasa lo aprendido en el Cuaderno'], 6000);
+    await di('sagan', ['Hemos llegado hasta el centro del átomo. Pero el viaje no ha terminado.', 'Cuando despiertes, sigue preguntando.']);
+    G.flags.luz = false; G.entraDormido = true;
+    await ir('despacho');
+    G.entraDormido = false;
+    await esperar(2200);
+    G.postura = 'pie'; G.ax = 98; G.cara = 1;
+    sonido('nota');
+    await di('alberto', ['¿Eh? ¿Me he dormido otra vez?', 'Qué sueño más raro: un átomo casi vacío, con un centro diminuto… y Carl Sagan de guía.']);
+    await di('alberto', 'El reloj sigue marcando las doce y cuarto. Igual que antes de dormirme.');
+    await andarA(150, 1);
+    await di('alberto', 'Y el ordenador está encendido…');
+    G.glitch = { hasta: G.t + 1.6, popup: true };
+    sonido('mal');
+    await esperar(1900);
+    await di('alberto', ['¿Qué es esto?', 'Butaca, reloj, ventana, libro… y «sueño.js: sin autor».']);
+    await di('alberto', ['Un momento. Si todo esto es un sueño mío…', '¿quién está escribiendo el sueño?']);
+    await elegir(['Dios.', 'Algo anterior al Big Bang.', 'Otro Alberto, uno de verdad.']);
+    await di('alberto', ['Puede ser.', 'Y si es así, no sé quién es ni por qué lo escribe.']);
+    await di('sagan', 'Yo tampoco lo sé, Alberto. Pero seguir preguntando es lo único que nos ha hecho avanzar.');
+    G.flags.final = true; guardar();
+    await cierre();
 }
 
 PANTALLAS.aula = {
@@ -2751,6 +2930,7 @@ function cargarArte() {
     for (const id in FIGURAS) SPR[id] = personaje(FIGURAS[id]);
     SPR.albSentado = albertoSentado(false);
     SPR.albDormido = albertoSentado(true);
+    SPR.albTeclea = [albertoTeclea(0), albertoTeclea(1)];
     SPR.poang = poang();
     SPR.libroAbierto = libroAbierto();
     SPR.lampara = lampara(true); SPR.lamparaOff = lampara(false);
